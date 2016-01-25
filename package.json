@@ -1,0 +1,10 @@
+{
+  "name": "bakula-statsd",
+  "version": "1.0.0",
+  "description": "A docker container and postgres backend for statsd to be used with bakula",
+  "main": "statsdPostgresBackend.js",
+  "license": "ISC",
+  "dependencies": {
+    "pg": "4.4.3"
+  }
+}
