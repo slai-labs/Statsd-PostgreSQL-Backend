@@ -1,6 +1,3 @@
-/* Drops the tables if they exist */
-DROP TABLE IF EXISTS stats CASCADE;
-
 /*
     Create a table to hold all bakula stats
 
