@@ -20,13 +20,14 @@ module.exports = (function() {
 
     // The various statsd types as per https://github.com/etsy/statsd/blob/master/docs/metric_types.md
     var STATSD_TYPES = {
-        counting: "c",
+        counting: "counting",
         timing: "ms",
-        gauges: "g",
-        sets: "s"
+        gauges: "gauge",
+        sets: "set"
     };
 
     // The path to the SQL script that initializes the table and functions
+    // set this to undefined or null to NOT run initializations via node.
     var INITIALIZE_SQL_SCRIPT_FILE_PATH = path.join(__dirname, "psql", "init.sql");
 
     // PostgreSQL configuration properties for module-wide access
@@ -39,7 +40,11 @@ module.exports = (function() {
     // Generated and cached PostgreSQL connection string
     var connStr;
 
+    // Matchy match on curley brackets
+    var curleyRegex = new RegExp(/{(.*?)}/);
+
     // Return connection string; this lets it be lazy loaded
+    // Handles cases where user and password or just password is omitted
     var connectionString = function() {
         if (connStr === undefined) {
             connStr = "postgres://";
@@ -53,7 +58,8 @@ module.exports = (function() {
     }
 
     // Calling this method grabs a connection to PostgreSQL from the connection pool
-    // then returns a client to be used.
+    // then returns a client to be used. Done must be called at the end of using the
+    // connection to return it to the pool.
     var conn = function(callback) {
         pg.connect(connectionString(), function(err, client, done) {
             return callback(err, client, done);
@@ -62,6 +68,11 @@ module.exports = (function() {
 
     // Create stats table and functions should they not exist
     var initializePSQL = function(callback) {
+        // If initialization script isn't set then don't attempt to run it. I mean
+        // trying to run something that doesn't exist wouldn't make sense, right?
+        if (INITIALIZE_SQL_SCRIPT_FILE_PATH == undefined) {
+            return callback(null, null);
+        }
         conn(function(err, client, done) {
             if (err) {
                 return callback(err);
@@ -78,15 +89,15 @@ module.exports = (function() {
     };
 
     // Insert new metrics values
-    var insertMetric = function(timestamp, metric, mtype, value, callback) {
+    var insertMetric = function(obj, callback) {
         conn(function(err, client, done) {
             if (err) {
                 return callback(err);
             }
 
             client.query({
-                text: "SELECT add_stat($1, $2, $3)",
-                values: [metric, mtype, value]
+                text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7)",
+                values: [obj.collected, obj.topic, obj.category, obj.subcategory, obj.metric, obj.type, obj.value]
             }, function(queryErr, queryResult) {
                 done();
                 if (queryErr) {
@@ -109,21 +120,48 @@ module.exports = (function() {
         var metric = metrics_copy.shift();
 
         var processMetric = function(metric) {
-            insertMetric.apply(context, metric.concat(function(err, result) {
+            insertMetric.apply(context, [metric, (function(err, result) {
                 if (err) {
                     errResult.push(err);
                 } else {
                     goodResult.push(result);
                 }
 
-                var metric = metrics_copy.shift();
+                metric = metrics_copy.shift();
                 if (metric === undefined) {
                     return callback(errResult, goodResult);
                 }
                 return processMetric(metric);
-            }));
+            })]);
         };
         processMetric(metric);
+    };
+
+    // Extracts stats appropriately and returns an array of objects
+    var extractor = function(timestamp, stats, type) {
+        var results = [];
+        for (var key in stats) {
+            if (stats.hasOwnProperty(key) && IGNORED_STATSD_METRICS.indexOf(key) === -1) {
+                var stat = {
+                    collected: (new Date(timestamp * 1000)).toISOString(),
+                    type: type,
+                    value: stats[key]
+                };
+
+                if (key.indexOf("__") !== -1) {
+                    // We have a special, custom thingie! Aww yeah
+                    var splits = key.split("__");
+                    stat.metric = splits.pop();
+                    stat.topic = splits[0];
+                    stat.category = splits[1];
+                    stat.subcategory = splits[2];
+                } else {
+                    stat.metric = key;
+                }
+                results.push(stat);
+            }
+        }
+        return results;
     };
 
     return {
@@ -141,12 +179,10 @@ module.exports = (function() {
             });
 
             events.on("flush", function(timestamp, statsdMetrics) {
-                var metrics = [];
-                for (var key in statsdMetrics.counters) {
-                    if (statsdMetrics.counters.hasOwnProperty(key) && IGNORED_STATSD_METRICS.indexOf(key) === -1) {
-                        metrics.push([timestamp, STATSD_TYPES.counting, key, statsdMetrics.counters[key]]);
-                    }
-                }
+                var metrics = extractor(timestamp, statsdMetrics.counters, STATSD_TYPES.counting);
+                metrics = metrics.concat(extractor(timestamp, statsdMetrics.gauges, STATSD_TYPES.gauges));
+                metrics = metrics.concat(extractor(timestamp, statsdMetrics.sets, STATSD_TYPES.set));
+                metrics = metrics.concat(extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.ms));
 
                 insertMetrics(metrics, function(errs, goods) {
                     if (errs.length > 0) {
