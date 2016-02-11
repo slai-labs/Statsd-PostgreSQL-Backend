@@ -3,9 +3,7 @@
 
     This table is going to be written to with high frequency but since it needs
     to provide stats in real time we have to both write and read with high frequency.
-    Therefore we are only indexing collected so further queries minimize their table
-    scans to a specific timeframe (all get calls request a start and end time). This
-    may need to be revised later on.
+    Therefore let's limit indexing to as much as possible.
 */
 CREATE TABLE IF NOT EXISTS stats (
     collected TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
