@@ -1,5 +1,5 @@
 /*
-    Create a table to hold all bakula stats
+    Create a table to hold all statsd stats
 
     This table is going to be written to with high frequency but since it needs
     to provide stats in real time we have to both write and read with high frequency.
