@@ -12,6 +12,8 @@ To use this backend you must do the following:
     pguser: "user",
     pgpass: undefined,
     pgdb: "postgres",
+    pgport: 5432,
+    pginit: true,
     port: 8125,
     backends: [ "/path/to/statsdPostgresBackend" ]
 }
@@ -20,9 +22,5 @@ To use this backend you must do the following:
 4. ?????
 5. Profit!
 
-### Caveats
-There are a couple of caveats with this module at the moment.
-
-1. The database user needs to be able to create tables and functions as this is how it is currently initialized. Ideally the initialization script can be run separately to avoid giving the database user such permissions but at the moment it'll try running it anyway on start-up.
-
-2. At the moment this **only stores counts**! There are a lot of considerations when storing statsd data that simply haven't been factored into this backend yet.
+### PostgreSQL Initialization
+If the ```pginit``` configuration value is set then it will attempt to initialize PostgreSQL. If the user does not have access to create tables and functions then you must run it separately and set ```pginit``` to false.

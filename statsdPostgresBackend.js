@@ -172,6 +172,10 @@ module.exports = (function() {
             pguser = config.pguser;
             pgpass = config.pgpass;
 
+            if (config.pginit !== true) {
+                INITIALIZE_SQL_SCRIPT_FILE_PATH = undefined;
+            }
+
             initializePSQL(function(err) {
                 if (err) {
                     return console.error(err);
