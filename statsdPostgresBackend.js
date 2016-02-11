@@ -40,9 +40,6 @@ module.exports = (function() {
     // Generated and cached PostgreSQL connection string
     var connStr;
 
-    // Matchy match on curley brackets
-    var curleyRegex = new RegExp(/{(.*?)}/);
-
     // Return connection string; this lets it be lazy loaded
     // Handles cases where user and password or just password is omitted
     var connectionString = function() {
