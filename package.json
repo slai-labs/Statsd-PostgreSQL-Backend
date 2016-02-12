@@ -1,0 +1,9 @@
+{
+  "name": "statsd-postgresql-backend",
+  "version": "1.0.0",
+  "description": "A docker container and postgres backend for statsd.",
+  "main": "statsdPostgresBackend.js",
+  "dependencies": {
+    "pg": "4.4.3"
+  }
+}
