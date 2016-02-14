@@ -12,4 +12,4 @@ ENV POSTGRES_USER kris
 #ENV POSTGRES_PASSWORD
 ENV POSTGRES_DATABASE postgres
 
-RUN chmod +x /tmp/init.sh && sync && /tmp/init.sh
+RUN /bin/bash /tmp/init.sh
