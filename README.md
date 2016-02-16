@@ -36,7 +36,7 @@ When data is sent over the new backend will interpret two underscores (```__```)
 topic: "something"
 metric: "yup"
 value: 3
-type: gague
+type: gauge
 ```
 This means when the data is stored into postgres the ```__``` will separate the columns in which they are stored. You can do this up to 3 levels.
 
