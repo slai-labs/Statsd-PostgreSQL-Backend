@@ -13,3 +13,5 @@ ENV POSTGRES_USER kris
 ENV POSTGRES_DATABASE postgres
 
 RUN /bin/bash /tmp/init.sh
+WORKDIR /opt/statsd
+ENTRYPOINT ["node", "stats.js", "configuration.js"]

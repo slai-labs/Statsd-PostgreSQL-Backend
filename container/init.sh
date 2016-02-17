@@ -19,6 +19,3 @@ cd ../../
 
 echo "Moving configuration"
 mv /tmp/configuration.js /opt/statsd/configuration.js
-
-echo "Starting statsd"
-node stats.js configuration.js
