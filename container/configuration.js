@@ -116,7 +116,7 @@ Optional Variables:
   pghost: process.env.POSTGRES_HOST,
   pguser: process.env.POSTGRES_USER,
   pgpass: process.env.POSTGRES_PASSWORD,
-  pgdb: process.env.POSTGRESS_DATABASE,
+  pgdb: process.env.POSTGRES_DATABASE,
   pgport: process.env.POSTGRES_PORT || 5432,
   pginit: true,
   port: 8125,
