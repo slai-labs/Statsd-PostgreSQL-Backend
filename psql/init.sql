@@ -33,12 +33,8 @@ BEGIN
     WHERE NOT EXISTS (SELECT 1
         FROM stats
         WHERE stats.collected = vcollected
-        AND stats.topic = vtopic
-        AND stats.category = vcategory
-        AND stats.subcategory = vsubcategory
         AND stats.metric = vmetric
         AND stats.type = vtype
-        AND stats.value = vvalue
     );
 END;
 $$ LANGUAGE plpgsql;
