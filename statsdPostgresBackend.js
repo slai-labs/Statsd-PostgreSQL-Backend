@@ -93,8 +93,8 @@ module.exports = (function() {
             }
 
             client.query({
-                text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7)",
-                values: [obj.collected, obj.topic, obj.category, obj.subcategory, obj.metric, obj.type, obj.value]
+                text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
+                values: [obj.collected, obj.topic, obj.category, obj.subcategory, obj.identity, obj.metric, obj.type, obj.value]
             }, function(queryErr, queryResult) {
                 done();
                 if (queryErr) {
@@ -152,6 +152,7 @@ module.exports = (function() {
                     stat.topic = splits[0];
                     stat.category = splits[1];
                     stat.subcategory = splits[2];
+                    stat.identity = splits[3];
                 } else {
                     stat.metric = key;
                 }
