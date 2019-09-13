@@ -6,7 +6,7 @@
 module.exports = (function() {
     "use strict";
     var fs = require("fs");
-    var pg = require("pg");
+    const { Pool, Client } = require('pg')
     var path = require("path");
 
     // Items we don't want to store but are sent with every statsd flush
@@ -58,7 +58,14 @@ module.exports = (function() {
     // then returns a client to be used. Done must be called at the end of using the
     // connection to return it to the pool.
     var conn = function(callback) {
-        pg.connect(connectionString(), function(err, client, done) {
+        var pool = new Pool({
+              user: pguser,
+              host: pghost,
+              database: pgdb,
+              password: pgpass,
+              port: pgport,
+        })
+        pool.connect(function(err, client, done) {
             return callback(err, client, done);
         });
     };
