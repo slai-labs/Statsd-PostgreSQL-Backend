@@ -36,6 +36,7 @@ module.exports = (function() {
     var pgport;
     var pguser;
     var pgpass;
+	var pool;
 
     // Generated and cached PostgreSQL connection string
     var connStr;
@@ -58,7 +59,7 @@ module.exports = (function() {
     // then returns a client to be used. Done must be called at the end of using the
     // connection to return it to the pool.
     var conn = function(callback) {
-        var pool = new Pool({
+        pool = new Pool({
               user: pguser,
               host: pghost,
               database: pgdb,
@@ -90,6 +91,7 @@ module.exports = (function() {
                 return callback(null, queryResult);
             });
         });
+		pool.end();
     };
 
     // Insert new metrics values
@@ -114,6 +116,7 @@ module.exports = (function() {
                 return callback(null, queryResult);
             });
         });
+		pool.end();
     };
 
     // Inserts multiple metrics records
