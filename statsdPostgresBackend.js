@@ -99,6 +99,10 @@ module.exports = (function() {
                 return callback(err);
             }
 
+			if (obj.type == "counting" && obj.value == 0) {
+				return callback(null, 0);
+			}
+
             client.query({
                 text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
                 values: [obj.collected, obj.topic, obj.category, obj.subcategory, obj.identity, obj.metric, obj.type, obj.value]
