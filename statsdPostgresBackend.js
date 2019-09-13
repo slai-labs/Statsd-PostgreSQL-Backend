@@ -152,9 +152,9 @@ module.exports = (function() {
                     value: stats[key]
                 };
 
-                if (key.indexOf("__") !== -1) {
+                if (key.indexOf(".") !== -1) {
                     // We have a special, custom thingie! Aww yeah
-                    var splits = key.split("__");
+                    var splits = key.split(".");
                     stat.metric = splits.pop();
                     stat.topic = splits[0];
                     stat.category = splits[1];
