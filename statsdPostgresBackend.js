@@ -28,7 +28,7 @@ module.exports = (function () {
 
   // The path to the SQL script that initializes the table and functions
   // set this to undefined or null to NOT run initializations via node.
-  const INITIALIZE_SQL_SCRIPT_FILE_PATH = path.join(
+  let INITIALIZE_SQL_SCRIPT_FILE_PATH = path.join(
     __dirname,
     "psql",
     "init.sql"
