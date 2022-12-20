@@ -243,7 +243,7 @@ module.exports = (function () {
       events.on("flush", function (timestamp, statsdMetrics) {
         console.log(statsdMetrics);
 
-        const metrics = extractor(
+        let metrics = extractor(
           timestamp,
           statsdMetrics.counters,
           STATSD_TYPES.counting
