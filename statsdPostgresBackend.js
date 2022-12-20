@@ -20,7 +20,7 @@ module.exports = (function() {
 
     // The various statsd types as per https://github.com/etsy/statsd/blob/master/docs/metric_types.md
     var STATSD_TYPES = {
-        counting: "counting",
+        counting: "count",
         timing: "ms",
         gauges: "gauge",
         sets: "set"
@@ -101,7 +101,11 @@ module.exports = (function() {
                 return callback(err);
             }
 
-			if (obj.type == "counting" && obj.value == 0) {
+			if (obj.type == "count" && obj.value == 0) {
+				return callback(null, 0);
+			}
+
+            if (obj.type == "ms" && obj.value.length == 0) {
 				return callback(null, 0);
 			}
 
@@ -152,23 +156,53 @@ module.exports = (function() {
     var extractor = function(timestamp, stats, type) {
         var results = [];
         for (var key in stats) {
-            if (stats.hasOwnProperty(key) && IGNORED_STATSD_METRICS.indexOf(key) === -1) {
+            if (!stats.hasOwnProperty(key)) continue;
+            if (IGNORED_STATSD_METRICS.indexOf(key) !== -1) continue;
+
+            var stat = {
+                collected: (new Date(timestamp * 1000)).toISOString(),
+                type: type,
+                value: stats[key]
+            };
+
+            if (key.indexOf(".") !== -1) {
+                // assume: topic.category.subcategory.identity.metric
+                var splits = key.split(".");
+                stat.metric = splits.pop();
+                stat.topic = splits[0];
+                stat.category = splits[1];
+                stat.subcategory = splits[2];
+                stat.identity = splits[3];
+            } else {
+                stat.metric = key;
+            }
+            results.push(stat);
+        }
+        return results;
+    };
+
+    var extractor_timer_data = function(timestamp, stats) {
+        var results = [];
+        for (var timer in stats) {
+            if (!stats.hasOwnProperty(timer)) continue;
+            if (IGNORED_STATSD_METRICS.indexOf(timer) !== -1) continue;
+
+            for (var key in stats[timer]) {
                 var stat = {
                     collected: (new Date(timestamp * 1000)).toISOString(),
-                    type: type,
-                    value: stats[key]
+                    type: key,
+                    value: stats[timer][key]
                 };
-
-                if (key.indexOf(".") !== -1) {
-                    // We have a special, custom thingie! Aww yeah
-                    var splits = key.split(".");
+                if (timer.indexOf(".") !== -1) {
+                    // assume: topic.category.subcategory.identity.metric
+                    var splits = timer.split(".");
                     stat.metric = splits.pop();
                     stat.topic = splits[0];
                     stat.category = splits[1];
                     stat.subcategory = splits[2];
                     stat.identity = splits[3];
                 } else {
-                    stat.metric = key;
+                    stat.metric = timer;
                 }
                 results.push(stat);
             }
@@ -198,7 +232,8 @@ module.exports = (function() {
                 var metrics = extractor(timestamp, statsdMetrics.counters, STATSD_TYPES.counting);
                 metrics = metrics.concat(extractor(timestamp, statsdMetrics.gauges, STATSD_TYPES.gauges));
                 metrics = metrics.concat(extractor(timestamp, statsdMetrics.sets, STATSD_TYPES.set));
-                metrics = metrics.concat(extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.ms));
+                metrics = metrics.concat(extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timing));
+                metrics = metrics.concat(extractor_timer_data(timestamp, statsdMetrics.timer_data));
 
                 insertMetrics(metrics, function(errs, goods) {
                     if (errs.length > 0) {
