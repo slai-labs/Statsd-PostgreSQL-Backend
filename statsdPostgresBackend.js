@@ -48,12 +48,17 @@ module.exports = (function () {
   let pgport;
   let pguser;
   let pgpass;
+  let pgPool = null;
 
   // Calling this method grabs a connection to PostgreSQL from the connection pool
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
-  const conn = async function () {
-    const pgClient = new Pool({
+  const initConnectionPool = async function () {
+    if (pgPool !== null) {
+      return pgPool;
+    }
+
+    newPool = new Pool({
       user: pguser,
       host: pghost,
       database: pgdb,
@@ -61,7 +66,8 @@ module.exports = (function () {
       port: pgport,
     });
 
-    return await pgClient.connect();
+    await newPool.connect();
+    return newPool;
   };
 
   // Insert new metrics values
@@ -74,7 +80,7 @@ module.exports = (function () {
       return callback(null, 0);
     }
 
-    await pgClient.query({
+    await pgPool.query({
       text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
       values: [
         obj.collected,
@@ -97,15 +103,12 @@ module.exports = (function () {
       return console.log("No metrics to insert");
     }
 
-    const pool = await conn();
-    try {
-      for (const index in metrics_copy) {
+    for (const index in metrics_copy) {
+      try {
         await insertMetric(metrics_copy[index], pool);
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      await pool.end();
     }
   };
 
@@ -149,6 +152,7 @@ module.exports = (function () {
       pgport = config.pgport || 5432;
       pguser = config.pguser;
       pgpass = config.pgpass;
+      pgPool = await initConnectionPool();
 
       events.on("flush", function (timestamp, statsdMetrics) {
         let metrics = extractor(
@@ -174,6 +178,12 @@ module.exports = (function () {
       });
 
       return true;
+    },
+    stop: function (callback) {
+      if (pgPool !== null) {
+        pgPool.end();
+      }
+      callback();
     },
   };
 })();
