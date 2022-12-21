@@ -6,7 +6,7 @@
 module.exports = (function () {
   "use strict";
   const fs = require("fs");
-  const { Pool, Client } = require("pg");
+  const { Pool } = require("pg");
   const path = require("path");
 
   // Items we don't want to store but are sent with every statsd flush
@@ -48,121 +48,66 @@ module.exports = (function () {
   let pgport;
   let pguser;
   let pgpass;
-  let pool;
 
   // Calling this method grabs a connection to PostgreSQL from the connection pool
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
-  const conn = function (callback) {
-    pool = new Pool({
+  const conn = async function () {
+    const pgClient = new Pool({
       user: pguser,
       host: pghost,
       database: pgdb,
       password: pgpass,
       port: pgport,
     });
-    pool.connect(function (err, client, done) {
-      return callback(err, client, done);
-    });
-  };
 
-  // Create stats table and functions should they not exist
-  const initializePSQL = function (callback) {
-    // If initialization script isn't set then don't attempt to run it. I mean
-    // trying to run something that doesn't exist wouldn't make sense, right?
-    if (INITIALIZE_SQL_SCRIPT_FILE_PATH == undefined) {
-      return callback(null, null);
-    }
-    conn(function (err, client, done) {
-      if (err) {
-        return callback(err);
-      }
-      client.query(
-        fs.readFileSync(INITIALIZE_SQL_SCRIPT_FILE_PATH, { encoding: "utf8" }),
-        function (queryErr, queryResult) {
-          if (queryErr) {
-            done();
-            return callback(queryErr);
-          }
-          done();
-          return callback(null, queryResult);
-        }
-      );
-    });
-    pool.end();
+    return await pgClient.connect();
   };
 
   // Insert new metrics values
-  const insertMetric = function (obj, callback) {
-    conn(function (err, client, done) {
-      if (err) {
-        return callback(err);
-      }
+  const insertMetric = async function (obj) {
+    const pgClient = await conn();
 
-      if (obj.type == "count" && obj.value == 0) {
-        return callback(null, 0);
-      }
+    if (obj.type == "count" && obj.value == 0) {
+      return callback(null, 0);
+    }
 
-      if (obj.type == "ms" && obj.value.length == 0) {
-        return callback(null, 0);
-      }
+    if (obj.type == "ms" && obj.value.length == 0) {
+      return callback(null, 0);
+    }
 
-      client.query(
-        {
-          text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
-          values: [
-            obj.collected,
-            obj.topic,
-            obj.category,
-            obj.subcategory,
-            obj.identity,
-            obj.metric,
-            obj.type,
-            obj.value,
-          ],
-        },
-        function (queryErr, queryResult) {
-          done();
-          if (queryErr) {
-            return callback(queryErr);
-          }
-          return callback(null, queryResult);
-        }
-      );
-    });
-    pool.end();
+    try {
+      await client.query({
+        text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
+        values: [
+          obj.collected,
+          obj.topic,
+          obj.category,
+          obj.subcategory,
+          obj.identity,
+          obj.metric,
+          obj.type,
+          obj.value,
+        ],
+      });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      await pgClient.end();
+    }
   };
 
   // Inserts multiple metrics records
-  const insertMetrics = function (metrics, callback) {
-    const context = this;
+  const insertMetrics = async function (metrics) {
     const metrics_copy = (metrics || []).slice(0);
+
     if (metrics_copy.length === 0) {
-      return callback([], []);
+      return console.log("No metrics to insert");
     }
-    const errResult = [];
-    const goodResult = [];
-    const metric = metrics_copy.shift();
 
-    const processMetric = function (metric) {
-      insertMetric.apply(context, [
-        metric,
-        function (err, result) {
-          if (err) {
-            errResult.push(err);
-          } else {
-            goodResult.push(result);
-          }
-
-          metric = metrics_copy.shift();
-          if (metric === undefined) {
-            return callback(errResult, goodResult);
-          }
-          return processMetric(metric);
-        },
-      ]);
-    };
-    processMetric(metric);
+    for (const index in metrics_copy) {
+      await insertMetric(metrics_copy[index]);
+    }
   };
 
   const parseStatFields = function (statString) {
@@ -223,22 +168,12 @@ module.exports = (function () {
   };
 
   return {
-    init: function (startup_time, config, events, logger) {
+    init: async function (startup_time, config, events, logger) {
       pgdb = config.pgdb;
       pghost = config.pghost;
       pgport = config.pgport || 5432;
       pguser = config.pguser;
       pgpass = config.pgpass;
-
-      if (config.pginit !== true) {
-        INITIALIZE_SQL_SCRIPT_FILE_PATH = undefined;
-      }
-
-      initializePSQL(function (err) {
-        if (err) {
-          return console.error(err);
-        }
-      });
 
       events.on("flush", function (timestamp, statsdMetrics) {
         console.log(statsdMetrics);
@@ -261,11 +196,7 @@ module.exports = (function () {
           extractor_timer_data(timestamp, statsdMetrics.timer_data)
         );
 
-        insertMetrics(metrics, function (errs, goods) {
-          if (errs.length > 0) {
-            console.error(errs);
-          }
-        });
+        insertMetrics(metrics);
       });
 
       events.on("status", function (callback) {
