@@ -69,11 +69,11 @@ module.exports = (function () {
   // Insert new metrics values
   const insertMetric = async function (obj) {
     if (obj.type == "count" && obj.value == 0) {
-      return callback(null, 0);
+      return console.log(null, 0);
     }
 
     if (obj.type == "ms" && obj.value.length == 0) {
-      return callback(null, 0);
+      return console.log(null, 0);
     }
 
     await pgPool.query({
