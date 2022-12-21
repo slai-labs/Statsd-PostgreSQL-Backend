@@ -54,11 +54,7 @@ module.exports = (function () {
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
   const initConnectionPool = async function () {
-    if (pgPool !== null) {
-      return pgPool;
-    }
-
-    newPool = new Pool({
+    const newPool = new Pool({
       user: pguser,
       host: pghost,
       database: pgdb,
@@ -152,7 +148,10 @@ module.exports = (function () {
       pgport = config.pgport || 5432;
       pguser = config.pguser;
       pgpass = config.pgpass;
-      pgPool = await initConnectionPool();
+
+      if (pgPool === null) {
+        pgPool = await initConnectionPool();
+      }
 
       events.on("flush", function (timestamp, statsdMetrics) {
         let metrics = extractor(
