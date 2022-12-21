@@ -172,7 +172,7 @@ module.exports = (function () {
         );
 
         metrics = metrics.concat(
-          extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timers)
+          extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timer)
         );
 
         insertMetrics(metrics);
