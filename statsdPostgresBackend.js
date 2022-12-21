@@ -20,10 +20,10 @@ module.exports = (function () {
 
   // The various statsd types as per https://github.com/etsy/statsd/blob/master/docs/metric_types.md
   const STATSD_TYPES = {
-    counting: "count",
-    timing: "ms",
+    count: "count",
+    timer: "timer",
     gauges: "gauge",
-    sets: "set",
+    sets: "sets",
   };
 
   // The path to the SQL script that initializes the table and functions
@@ -120,6 +120,10 @@ module.exports = (function () {
 
   // Extracts stats appropriately and returns an array of objects
   const extractor = function (timestamp, stats, type) {
+    if (type === STATSD_TYPES.timer) {
+      console.log(stats);
+    }
+
     const results = [];
     for (const statString in stats) {
       if (
@@ -157,16 +161,18 @@ module.exports = (function () {
         let metrics = extractor(
           timestamp,
           statsdMetrics.counters,
-          STATSD_TYPES.counting
+          STATSD_TYPES.count
         );
         metrics = metrics.concat(
           extractor(timestamp, statsdMetrics.gauges, STATSD_TYPES.gauges)
         );
+
         metrics = metrics.concat(
-          extractor(timestamp, statsdMetrics.sets, STATSD_TYPES.set)
+          extractor(timestamp, statsdMetrics.sets, STATSD_TYPES.sets)
         );
+
         metrics = metrics.concat(
-          extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timing)
+          extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timers)
         );
 
         insertMetrics(metrics);
