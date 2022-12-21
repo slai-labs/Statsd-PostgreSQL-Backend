@@ -71,7 +71,7 @@ module.exports = (function () {
   };
 
   // Insert new metrics values
-  const insertMetric = async function (obj, pgClient) {
+  const insertMetric = async function (obj) {
     if (obj.type == "count" && obj.value == 0) {
       return callback(null, 0);
     }
@@ -105,7 +105,7 @@ module.exports = (function () {
 
     for (const index in metrics_copy) {
       try {
-        await insertMetric(metrics_copy[index], pool);
+        await insertMetric(metrics_copy[index]);
       } catch (error) {
         console.log(error);
       }
