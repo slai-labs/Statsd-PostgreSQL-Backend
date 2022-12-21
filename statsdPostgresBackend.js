@@ -65,9 +65,7 @@ module.exports = (function () {
   };
 
   // Insert new metrics values
-  const insertMetric = async function (obj) {
-    const pgClient = await conn();
-
+  const insertMetric = async function (obj, pgClient) {
     if (obj.type == "count" && obj.value == 0) {
       return callback(null, 0);
     }
@@ -76,25 +74,19 @@ module.exports = (function () {
       return callback(null, 0);
     }
 
-    try {
-      await client.query({
-        text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
-        values: [
-          obj.collected,
-          obj.topic,
-          obj.category,
-          obj.subcategory,
-          obj.identity,
-          obj.metric,
-          obj.type,
-          obj.value,
-        ],
-      });
-    } catch (error) {
-      console.log(error);
-    } finally {
-      await pgClient.end();
-    }
+    await pgClient.query({
+      text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
+      values: [
+        obj.collected,
+        obj.topic,
+        obj.category,
+        obj.subcategory,
+        obj.identity,
+        obj.metric,
+        obj.type,
+        obj.value,
+      ],
+    });
   };
 
   // Inserts multiple metrics records
@@ -105,8 +97,15 @@ module.exports = (function () {
       return console.log("No metrics to insert");
     }
 
-    for (const index in metrics_copy) {
-      await insertMetric(metrics_copy[index]);
+    const pool = await conn();
+    try {
+      for (const index in metrics_copy) {
+        await insertMetric(metrics_copy[index], pool);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      await pool.end();
     }
   };
 
@@ -143,30 +142,6 @@ module.exports = (function () {
     return results;
   };
 
-  const extractor_timer_data = function (timestamp, stats) {
-    const results = [];
-    for (const timer in stats) {
-      if (
-        !stats.hasOwnProperty(timer) ||
-        IGNORED_STATSD_METRICS.indexOf(timer) !== -1 ||
-        timer.indexOf(".") !== -1
-      )
-        continue;
-
-      for (const key in stats[timer]) {
-        const stat = {
-          collected: new Date(timestamp * 1000).toISOString(),
-          type: key,
-          value: stats[timer][key],
-          ...parseStatFields(timer),
-        };
-
-        results.push(stat);
-      }
-    }
-    return results;
-  };
-
   return {
     init: async function (startup_time, config, events, logger) {
       pgdb = config.pgdb;
@@ -176,8 +151,6 @@ module.exports = (function () {
       pgpass = config.pgpass;
 
       events.on("flush", function (timestamp, statsdMetrics) {
-        console.log(statsdMetrics);
-
         let metrics = extractor(
           timestamp,
           statsdMetrics.counters,
@@ -191,9 +164,6 @@ module.exports = (function () {
         );
         metrics = metrics.concat(
           extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timing)
-        );
-        metrics = metrics.concat(
-          extractor_timer_data(timestamp, statsdMetrics.timer_data)
         );
 
         insertMetrics(metrics);
