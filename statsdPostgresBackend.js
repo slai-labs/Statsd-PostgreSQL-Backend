@@ -136,7 +136,7 @@ module.exports = (function () {
       const stat = {
         collected: new Date(timestamp * 1000).toISOString(),
         type: type,
-        value: stats[statString],
+        value: JSON.stringify(stats[statString]),
         ...parseStatFields(statString),
       };
 
