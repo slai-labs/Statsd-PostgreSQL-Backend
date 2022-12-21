@@ -5,7 +5,6 @@
 
 module.exports = (function () {
   "use strict";
-  const fs = require("fs");
   const { Pool } = require("pg");
   const path = require("path");
 
@@ -120,10 +119,6 @@ module.exports = (function () {
 
   // Extracts stats appropriately and returns an array of objects
   const extractor = function (timestamp, stats, type) {
-    if (type === STATSD_TYPES.timer) {
-      console.log(stats);
-    }
-
     const results = [];
     for (const statString in stats) {
       if (
