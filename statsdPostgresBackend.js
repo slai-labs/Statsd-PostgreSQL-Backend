@@ -67,11 +67,11 @@ module.exports = (function () {
 
   // Insert new metrics values
   const insertMetric = async function (obj) {
-    if (obj.type === "count" && obj.value === 0) {
+    if (obj.type === "count" && JSON.parse(obj.value) === 0) {
       return console.log("count is 0, skipping");
     }
 
-    if (obj.type === "timer" && obj.value.length === 0) {
+    if (obj.type === "timer" && JSON.parse(obj.value).length === 0) {
       return console.log("timer is emtpy, skipping");
     }
 
