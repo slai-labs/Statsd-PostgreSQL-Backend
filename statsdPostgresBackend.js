@@ -67,12 +67,12 @@ module.exports = (function () {
 
   // Insert new metrics values
   const insertMetric = async function (obj) {
-    if (obj.type == "count" && obj.value == 0) {
-      return console.log(null, 0);
+    if (obj.type === "count" && obj.value === 0) {
+      return console.log("count is 0, skipping");
     }
 
-    if (obj.type == "ms" && obj.value.length == 0) {
-      return console.log(null, 0);
+    if (obj.type === "timer" && obj.value.length === 0) {
+      return console.log("timer is emtpy, skipping");
     }
 
     await pgPool.query({
@@ -127,12 +127,6 @@ module.exports = (function () {
         statString.indexOf(".") === -1
       )
         continue;
-
-      if (Array.isArray(stats[statString]) && stats[statString].length === 0) {
-        continue;
-      }
-
-      console.log(JSON.stringify(stats[statString], stats[statString]));
 
       const stat = {
         collected: new Date(timestamp * 1000).toISOString(),
