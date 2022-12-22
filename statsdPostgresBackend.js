@@ -109,6 +109,19 @@ module.exports = (function () {
     return result;
   };
 
+  // Ignore values that are either empty arrays or 0
+  const isEmptyValue = function (value, type) {
+    if (type === STATSD_TYPES.count && value === 0) {
+      return true;
+    }
+
+    if (type === STATSD_TYPES.timer && value.length === 0) {
+      return true;
+    }
+
+    return false;
+  };
+
   // Extracts stats appropriately and returns an array of objects
   const extractor = function (timestamp, stats, type) {
     const results = [];
@@ -120,14 +133,7 @@ module.exports = (function () {
       )
         continue;
 
-      if (type === STATSD_TYPES.count && stats[statString] === 0) {
-        return console.log("count is 0, skipping");
-      } else if (
-        type === STATSD_TYPES.timer &&
-        stats[statString].length === 0
-      ) {
-        return console.log("timer is emtpy, skipping");
-      }
+      if (isEmptyValue(stats[statString], type)) continue;
 
       const stat = {
         collected: new Date(timestamp * 1000).toISOString(),
