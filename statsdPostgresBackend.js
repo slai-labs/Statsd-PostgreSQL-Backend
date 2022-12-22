@@ -67,14 +67,6 @@ module.exports = (function () {
 
   // Insert new metrics values
   const insertMetric = async function (obj) {
-    if (obj.type === "count" && JSON.parse(obj.value) === 0) {
-      return console.log("count is 0, skipping");
-    }
-
-    if (obj.type === "timer" && JSON.parse(obj.value).length === 0) {
-      return console.log("timer is emtpy, skipping");
-    }
-
     await pgPool.query({
       text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
       values: [
@@ -127,6 +119,15 @@ module.exports = (function () {
         statString.indexOf(".") === -1
       )
         continue;
+
+      if (type === STATSD_TYPES.count && stats[statString] === 0) {
+        return console.log("count is 0, skipping");
+      } else if (
+        type === STATSD_TYPES.timer &&
+        stats[statString].length === 0
+      ) {
+        return console.log("timer is emtpy, skipping");
+      }
 
       const stat = {
         collected: new Date(timestamp * 1000).toISOString(),
