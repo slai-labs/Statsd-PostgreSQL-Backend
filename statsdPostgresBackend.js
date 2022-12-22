@@ -128,6 +128,10 @@ module.exports = (function () {
       )
         continue;
 
+      if (Array.isArray(stats[statString]) && stats[statString].length === 0) {
+        continue;
+      }
+
       const stat = {
         collected: new Date(timestamp * 1000).toISOString(),
         type: type,
