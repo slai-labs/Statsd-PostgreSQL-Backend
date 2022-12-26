@@ -33,6 +33,8 @@ module.exports = (function () {
     "metric",
   ];
 
+  let pgPool;
+
   // Calling this method grabs a connection to PostgreSQL from the connection pool
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
