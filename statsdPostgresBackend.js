@@ -32,8 +32,7 @@ module.exports = (function () {
   var pgpass = undefined;
   var pool = undefined;
 
-  // Insert new metrics values
-  var insertMetric = function (obj, callback) {
+  const connectToPostgres = () => {
     if (pool === undefined) {
       pool = new Pool({
         user: pguser,
@@ -43,11 +42,11 @@ module.exports = (function () {
         port: pgport,
       });
     }
+  }
 
-    if (err) {
-      console.error("Unable to connect to postgres:", err);
-      return callback(err);
-    }
+  // Insert new metrics values
+  var insertMetric = function (obj, callback) {
+    connectToPostgres();
 
     if (obj.type == "count_ps" && obj.value == 0) {
       return callback(null, 0);
