@@ -26,24 +26,27 @@ module.exports = (function () {
   };
 
   // PostgreSQL configuration properties for module-wide access
-  var pghost;
-  var pgdb;
-  var pgport;
-  var pguser;
-  var pgpass;
-
-  var pool = new Pool({
-    user: pguser,
-    host: pghost,
-    database: pgdb,
-    password: pgpass,
-    port: pgport,
-  });
+  var pghost = undefined;
+  var pgdb = undefined;
+  var pgport = undefined;
+  var pguser = undefined;
+  var pgpass = undefined;
+  var pool = undefined;
 
   // Calling this method grabs a connection to PostgreSQL from the connection pool
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
   var conn = function (callback) {
+    if (pool === undefined) {
+      pool = new Pool({
+        user: pguser,
+        host: pghost,
+        database: pgdb,
+        password: pgpass,
+        port: pgport,
+      });
+    }
+
     pool.connect(function (err, client, done) {
       return callback(err, client, done);
     });
@@ -94,7 +97,6 @@ module.exports = (function () {
         }
       );
     });
-
   };
 
   // Inserts multiple metrics records
@@ -200,7 +202,10 @@ module.exports = (function () {
 
       // If config path is set, override config with values from secrets (from externalsecrets)
       if (process.env.CONFIG_PATH) {
-        console.log("Using config values from CONFIG_PATH: ", process.env.CONFIG_PATH);
+        console.log(
+          "Using config values from CONFIG_PATH: ",
+          process.env.CONFIG_PATH
+        );
 
         require("dotenv").config({ path: process.env.CONFIG_PATH });
         pgdb = process.env.DB_NAME;
