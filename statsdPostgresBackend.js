@@ -95,7 +95,6 @@ module.exports = (function () {
       );
     });
 
-    pool.end();
   };
 
   // Inserts multiple metrics records
@@ -158,6 +157,7 @@ module.exports = (function () {
       }
       results.push(stat);
     }
+
     return results;
   };
 
