@@ -6,7 +6,6 @@
 module.exports = (function () {
   "use strict";
   const { Pool } = require("pg");
-  const path = require("path");
 
   // Items we don't want to store but are sent with every statsd flush
   const IGNORED_STATSD_METRICS = [
@@ -71,6 +70,7 @@ module.exports = (function () {
       database: pgdb,
       password: pgpass,
       port: pgport,
+      keepAlive: true,
     });
 
     await newPool.connect();
