@@ -25,14 +25,6 @@ module.exports = (function () {
     sets: "sets",
   };
 
-  // The path to the SQL script that initializes the table and functions
-  // set this to undefined or null to NOT run initializations via node.
-  let INITIALIZE_SQL_SCRIPT_FILE_PATH = path.join(
-    __dirname,
-    "psql",
-    "init.sql"
-  );
-
   const STAT_SCHEMA = [
     "topic",
     "category",
@@ -41,18 +33,30 @@ module.exports = (function () {
     "metric",
   ];
 
-  // PostgreSQL configuration properties for module-wide access
-  let pghost;
-  let pgdb;
-  let pgport;
-  let pguser;
-  let pgpass;
-  let pgPool = null;
-
   // Calling this method grabs a connection to PostgreSQL from the connection pool
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
   const initConnectionPool = async function () {
+    let pgdb = config.pgdb;
+    let pghost = config.pghost;
+    let pgport = config.pgport || 5432;
+    let pguser = config.pguser;
+    let pgpass = config.pgpass;
+    // If config path is set, override config with values from secrets (from externalsecrets)
+    if (process.env.CONFIG_PATH) {
+      console.log(
+        "Using config values from CONFIG_PATH: ",
+        process.env.CONFIG_PATH
+      );
+
+      require("dotenv").config({ path: process.env.CONFIG_PATH });
+      pgdb = process.env.DB_NAME;
+      pghost = process.env.DB_HOST;
+      pgport = process.env.DB_PORT;
+      pguser = process.env.DB_USER;
+      pgpass = process.env.DB_PASS;
+    }
+
     const newPool = new Pool({
       user: pguser,
       host: pghost,
@@ -149,12 +153,6 @@ module.exports = (function () {
 
   return {
     init: async function (startup_time, config, events, logger) {
-      pgdb = config.pgdb;
-      pghost = config.pghost;
-      pgport = config.pgport || 5432;
-      pguser = config.pguser;
-      pgpass = config.pgpass;
-
       if (pgPool === null) {
         pgPool = await initConnectionPool();
       }
