@@ -57,6 +57,10 @@ module.exports = (function () {
         return callback(err);
       }
 
+      if (obj.type == "count_ps" && obj.value == 0) {
+        return callback(null, 0);
+      }
+
       if (obj.type == "count" && obj.value == 0) {
         return callback(null, 0);
       }
@@ -81,6 +85,7 @@ module.exports = (function () {
         },
         function (queryErr, queryResult) {
           done();
+
           if (queryErr) {
             return callback(queryErr);
           }
