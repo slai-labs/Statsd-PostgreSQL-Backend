@@ -6,6 +6,7 @@
 module.exports = (function () {
   "use strict";
   const { Pool } = require("pg");
+  const path = require("path");
 
   // Items we don't want to store but are sent with every statsd flush
   var IGNORED_STATSD_METRICS = [
@@ -30,20 +31,19 @@ module.exports = (function () {
   var pgport;
   var pguser;
   var pgpass;
-  var pool;
+
+  var pool = new Pool({
+    user: pguser,
+    host: pghost,
+    database: pgdb,
+    password: pgpass,
+    port: pgport,
+  });
 
   // Calling this method grabs a connection to PostgreSQL from the connection pool
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
   var conn = function (callback) {
-    pool = new Pool({
-      user: pguser,
-      host: pghost,
-      database: pgdb,
-      password: pgpass,
-      port: pgport,
-    });
-
     pool.connect(function (err, client, done) {
       return callback(err, client, done);
     });
@@ -89,6 +89,7 @@ module.exports = (function () {
           if (queryErr) {
             return callback(queryErr);
           }
+
           return callback(null, queryResult);
         }
       );
@@ -196,6 +197,16 @@ module.exports = (function () {
       pgport = config.pgport || 5432;
       pguser = config.pguser;
       pgpass = config.pgpass;
+
+      // If config path is set, override config with values from secrets (from externalsecrets)
+      if (process.env.CONFIG_PATH) {
+        require("dotenv").config({ path: process.env.CONFIG_PATH });
+        pgdb = process.env.DB_NAME;
+        pghost = process.env.DB_HOST;
+        pgport = process.env.DB_PORT;
+        pguser = process.env.DB_USER;
+        pgpass = process.env.DB_PASS;
+      }
 
       events.on("flush", function (timestamp, statsdMetrics) {
         var metrics = extractor(
