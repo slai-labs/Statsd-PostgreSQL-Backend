@@ -34,16 +34,21 @@ module.exports = (function () {
   ];
 
   let pgPool;
+  let pgdb;
+  let pghost;
+  let pgport;
+  let pguser;
+  let pgpass;
 
   // Calling this method grabs a connection to PostgreSQL from the connection pool
   // then returns a client to be used. Done must be called at the end of using the
   // connection to return it to the pool.
-  const initConnectionPool = async function () {
-    let pgdb = config.pgdb;
-    let pghost = config.pghost;
-    let pgport = config.pgport || 5432;
-    let pguser = config.pguser;
-    let pgpass = config.pgpass;
+  const initConnectionPool = async function (defaultConfig) {
+    pgdb = defaultConfig.pgdb;
+    pghost = defaultConfig.pghost;
+    pgport = defaultConfig.pgport || 5432;
+    pguser = defaultConfig.pguser;
+    pgpass = defaultConfig.pgpass;
 
     // If config path is set, override config with values from secrets (from externalsecrets)
     if (process.env.CONFIG_PATH) {
@@ -157,7 +162,7 @@ module.exports = (function () {
   return {
     init: async function (startup_time, config, events, logger) {
       if (pgPool === null) {
-        pgPool = await initConnectionPool();
+        pgPool = await initConnectionPool(config);
       }
 
       events.on("flush", function (timestamp, statsdMetrics) {
