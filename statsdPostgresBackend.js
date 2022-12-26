@@ -161,7 +161,7 @@ module.exports = (function () {
 
   return {
     init: async function (startup_time, config, events, logger) {
-      if (pgPool === null) {
+      if (!pgPool) {
         pgPool = await initConnectionPool(config);
       }
 
