@@ -200,6 +200,8 @@ module.exports = (function () {
 
       // If config path is set, override config with values from secrets (from externalsecrets)
       if (process.env.CONFIG_PATH) {
+        console.log("Using config values from CONFIG_PATH: ", process.env.CONFIG_PATH);
+
         require("dotenv").config({ path: process.env.CONFIG_PATH });
         pgdb = process.env.DB_NAME;
         pghost = process.env.DB_HOST;
