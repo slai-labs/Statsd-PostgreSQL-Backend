@@ -6,7 +6,6 @@
 module.exports = (function () {
   "use strict";
   const { Pool } = require("pg");
-  const path = require("path");
 
   // Items we don't want to store but are sent with every statsd flush
   var IGNORED_STATSD_METRICS = [
@@ -33,10 +32,8 @@ module.exports = (function () {
   var pgpass = undefined;
   var pool = undefined;
 
-  // Calling this method grabs a connection to PostgreSQL from the connection pool
-  // then returns a client to be used. Done must be called at the end of using the
-  // connection to return it to the pool.
-  var conn = function (callback) {
+  // Insert new metrics values
+  var insertMetric = function (obj, callback) {
     if (pool === undefined) {
       pool = new Pool({
         user: pguser,
@@ -47,56 +44,45 @@ module.exports = (function () {
       });
     }
 
-    pool.connect(function (err, client, done) {
-      return callback(err, client, done);
-    });
-  };
+    if (err) {
+      console.error("Unable to connect to postgres:", err);
+      return callback(err);
+    }
 
-  // Insert new metrics values
-  var insertMetric = function (obj, callback) {
-    conn(function (err, client, done) {
-      if (err) {
-        console.error("Unable to connect to postgres:", err);
-        return callback(err);
-      }
+    if (obj.type == "count_ps" && obj.value == 0) {
+      return callback(null, 0);
+    }
 
-      if (obj.type == "count_ps" && obj.value == 0) {
-        return callback(null, 0);
-      }
+    if (obj.type == "count" && obj.value == 0) {
+      return callback(null, 0);
+    }
 
-      if (obj.type == "count" && obj.value == 0) {
-        return callback(null, 0);
-      }
+    if (obj.type == "ms" && obj.value.length == 0) {
+      return callback(null, 0);
+    }
 
-      if (obj.type == "ms" && obj.value.length == 0) {
-        return callback(null, 0);
-      }
-
-      client.query(
-        {
-          text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
-          values: [
-            obj.collected,
-            obj.topic,
-            obj.category,
-            obj.subcategory,
-            obj.identity,
-            obj.metric,
-            obj.type,
-            obj.value,
-          ],
-        },
-        function (queryErr, queryResult) {
-          done();
-
-          if (queryErr) {
-            return callback(queryErr);
-          }
-
-          return callback(null, queryResult);
+    pool.query(
+      {
+        text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
+        values: [
+          obj.collected,
+          obj.topic,
+          obj.category,
+          obj.subcategory,
+          obj.identity,
+          obj.metric,
+          obj.type,
+          obj.value,
+        ],
+      },
+      function (queryErr, queryResult) {
+        if (queryErr) {
+          return callback(queryErr);
         }
-      );
-    });
+
+        return callback(null, queryResult);
+      }
+    );
   };
 
   // Inserts multiple metrics records
