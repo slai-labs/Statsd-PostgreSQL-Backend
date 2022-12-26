@@ -42,6 +42,7 @@ module.exports = (function () {
     let pgport = config.pgport || 5432;
     let pguser = config.pguser;
     let pgpass = config.pgpass;
+
     // If config path is set, override config with values from secrets (from externalsecrets)
     if (process.env.CONFIG_PATH) {
       console.log(
