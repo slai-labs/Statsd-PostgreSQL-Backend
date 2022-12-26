@@ -53,6 +53,7 @@ module.exports = (function () {
   var insertMetric = function (obj, callback) {
     conn(function (err, client, done) {
       if (err) {
+        console.error("Unable to connect to postgres:", err);
         return callback(err);
       }
 
