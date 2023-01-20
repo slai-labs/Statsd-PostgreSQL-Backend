@@ -98,13 +98,10 @@ module.exports = (function () {
   const insertMetrics = async function (metrics) {
     const metrics_copy = (metrics || []).slice(0);
 
-    if (metrics_copy.length === 0) {
-      return console.log("No metrics to insert");
-    }
-
     for (const index in metrics_copy) {
       try {
         await insertMetric(metrics_copy[index]);
+        console.log("Inserted metric: ", metrics_copy[index].metric);
       } catch (error) {
         console.log(error);
       }
