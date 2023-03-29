@@ -162,12 +162,15 @@ module.exports = (function () {
         pgPool = await initConnectionPool(config);
       }
 
+      console.log(events);
+
       events.on("flush", function (timestamp, statsdMetrics) {
         let metrics = extractor(
           timestamp,
           statsdMetrics.counters,
           STATSD_TYPES.count
         );
+
         metrics = metrics.concat(
           extractor(timestamp, statsdMetrics.gauges, STATSD_TYPES.gauges)
         );
