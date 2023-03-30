@@ -80,7 +80,7 @@ module.exports = (function () {
   // Insert new metrics values
   const insertMetric = async function (obj) {
     await pgPool.query({
-      text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8)",
+      text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8, $9)",
       values: [
         obj.collected,
         obj.topic,
@@ -90,6 +90,7 @@ module.exports = (function () {
         obj.metric,
         obj.type,
         obj.value,
+        obj.tags,
       ],
     });
   };
@@ -108,10 +109,33 @@ module.exports = (function () {
     }
   };
 
+  const parseMetricAndTags = function (metricField) {
+    const tags = {};
+
+    // the index is always the metric, the rest are tags
+    const splitMetric = metricField.split(";");
+    const metric = splitMetric[0];
+    const splitTags = splitMetric.slice(1);
+
+    for (const index in splitTags) {
+      const tag = splitTags[index].split("=");
+      tags[tag[0]] = tag.length > 1 ? tag[1] : true;
+    }
+
+    return [metric, tags];
+  };
+
   const parseStatFields = function (statString) {
     const result = {};
     const splitStats = statString.split(".");
     for (const index in splitStats) {
+      if (STAT_SCHEMA[index] === "metric") {
+        const [metric, tags] = parseMetricAndTags(splitStats[index]);
+        result.metric = metric;
+        result.tags = tags;
+        continue;
+      }
+
       result[STAT_SCHEMA[index]] = splitStats[index];
     }
 
@@ -161,8 +185,6 @@ module.exports = (function () {
       if (!pgPool) {
         pgPool = await initConnectionPool(config);
       }
-
-      console.log(events);
 
       events.on("flush", function (timestamp, statsdMetrics) {
         let metrics = extractor(
