@@ -1,0 +1,7 @@
+name: beam-statsd
+image: okteto.dev/beam-statsd:latest
+command: ["node", "stats.js", "config.js"]
+sync:
+  - .:../statsd-postgres-backend
+volumes:
+  - /root/.cache/pip
