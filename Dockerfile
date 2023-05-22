@@ -1,6 +1,6 @@
 from statsd/statsd:latest
 
-COPY . ../statsd-postgres-backend
+COPY . ./statsd-postgres-backend
 
 RUN npm install pg crypto-js
 

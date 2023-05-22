@@ -109,8 +109,7 @@ pre_hashed_string = (
       preHashed += ";" + JSON.stringify(obj.tags);
     }
 
-    const hash = CryptoJs.SHA256(preHashed).toString(CryptoJs.enc.Hex);
-    console.log(hash)
+    const hash = CryptoJs.MD5(preHashed).toString();
 
     await pgPool.query({
       text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
