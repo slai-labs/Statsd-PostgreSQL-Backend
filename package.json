@@ -4,6 +4,7 @@
   "description": "A docker container and postgres backend for statsd.",
   "main": "statsdPostgresBackend.js",
   "dependencies": {
+    "crypto-js": "^4.1.1",
     "dotenv": "^16.0.3",
     "pg": "7.12.1"
   }

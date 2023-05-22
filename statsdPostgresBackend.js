@@ -6,6 +6,7 @@
 module.exports = (function () {
   "use strict";
   const { Pool } = require("pg");
+  const CryptoJs = require("crypto-js");
 
   // Items we don't want to store but are sent with every statsd flush
   const IGNORED_STATSD_METRICS = [
@@ -79,8 +80,40 @@ module.exports = (function () {
 
   // Insert new metrics values
   const insertMetric = async function (obj) {
+    /*
+pre_hashed_string = (
+            "{collected}.{topic}.{category}.{subcategory}.{identity}.{metric}.{type};{tags}".format(
+                collected=stat.collected,
+                topic=stat.topic,
+                category=stat.category,
+                subcategory=stat.subcategory,
+                identity=stat.identity,
+                metric=stat.metric,
+                type=stat.type,
+                tags=stat.tags,
+            )
+        )
+
+    */
+    let preHashed = [
+      obj.collected,
+      obj.topic,
+      obj.category,
+      obj.subcategory,
+      obj.identity,
+      obj.metric,
+      obj.type,
+    ].join(".");
+
+    if (obj.tags) {
+      preHashed += ";" + JSON.stringify(obj.tags);
+    }
+
+    const hash = CryptoJs.SHA256(preHashed).toString(CryptoJs.enc.Hex);
+    console.log(hash)
+
     await pgPool.query({
-      text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+      text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
       values: [
         obj.collected,
         obj.topic,
@@ -91,6 +124,7 @@ module.exports = (function () {
         obj.type,
         obj.value,
         obj.tags,
+        hash,
       ],
     });
   };
