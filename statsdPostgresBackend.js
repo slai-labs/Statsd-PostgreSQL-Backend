@@ -80,21 +80,6 @@ module.exports = (function () {
 
   // Insert new metrics values
   const insertMetric = async function (obj) {
-    /*
-pre_hashed_string = (
-            "{collected}.{topic}.{category}.{subcategory}.{identity}.{metric}.{type};{tags}".format(
-                collected=stat.collected,
-                topic=stat.topic,
-                category=stat.category,
-                subcategory=stat.subcategory,
-                identity=stat.identity,
-                metric=stat.metric,
-                type=stat.type,
-                tags=stat.tags,
-            )
-        )
-
-    */
     let preHashed = [
       obj.collected,
       obj.topic,
