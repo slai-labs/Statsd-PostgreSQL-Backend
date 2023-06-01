@@ -6,6 +6,8 @@
 module.exports = (function () {
   "use strict";
   const { Pool } = require("pg");
+  const CryptoJS = require("crypto-js");
+  require("log-timestamp");
 
   // Items we don't want to store but are sent with every statsd flush
   const IGNORED_STATSD_METRICS = [
@@ -77,10 +79,35 @@ module.exports = (function () {
     return newPool;
   };
 
+  const recompileMetricString = function (obj) {
+    let metricString = [
+      obj.topic,
+      obj.category,
+      obj.subcategory,
+      obj.identity,
+      obj.metric,
+      obj.type,
+    ].join(".");
+
+    if (obj.tags) {
+      for (const tag in obj.tags) {
+        metricString += ";" + tag + "=" + obj.tags[tag];
+      }
+    }
+
+    return metricString;
+  }
+
+  const generateMetricHash = async (hashable) => { 
+    return CryptoJS.MD5(hashable).toString();
+  }
+
   // Insert new metrics values
-  const insertMetric = async function (obj) {
+  const insertMetric = async function (obj, metricString) {
+    const hash = await generateMetricHash(obj.collected + "." + metricString);
+
     await pgPool.query({
-      text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+      text: "SELECT add_stat($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
       values: [
         obj.collected,
         obj.topic,
@@ -91,6 +118,7 @@ module.exports = (function () {
         obj.type,
         obj.value,
         obj.tags,
+        hash,
       ],
     });
   };
@@ -98,11 +126,12 @@ module.exports = (function () {
   // Inserts multiple metrics records
   const insertMetrics = async function (metrics) {
     const metrics_copy = (metrics || []).slice(0);
-
+    
     for (const index in metrics_copy) {
       try {
-        await insertMetric(metrics_copy[index]);
-        console.log("Inserted metric: ", metrics_copy[index].metric);
+        const metricString = recompileMetricString(metrics_copy[index]);
+        await insertMetric(metrics_copy[index], metricString);
+        console.log(metricString);
       } catch (error) {
         console.log(error);
       }

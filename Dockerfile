@@ -2,8 +2,7 @@ from statsd/statsd:latest
 
 COPY . ../statsd-postgres-backend
 
-RUN cd .. \
-    && cd statsd-postgres-backend \
-    && npm install pg@^8
+RUN npm install pg@^8 crypto-js
+RUN npm install --global nodemon
 
 ADD statsdconfig.js config.js
