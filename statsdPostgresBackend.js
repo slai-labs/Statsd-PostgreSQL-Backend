@@ -7,6 +7,7 @@ module.exports = (function () {
   "use strict";
   const { Pool } = require("pg");
   const CryptoJS = require("crypto-js");
+  require("log-timestamp");
 
   // Items we don't want to store but are sent with every statsd flush
   const IGNORED_STATSD_METRICS = [
@@ -130,7 +131,7 @@ module.exports = (function () {
       try {
         const metricString = recompileMetricString(metrics_copy[index]);
         await insertMetric(metrics_copy[index], metricString);
-        console.log("Inserted metric: ", metricString);
+        console.log(metricString);
       } catch (error) {
         console.log(error);
       }
