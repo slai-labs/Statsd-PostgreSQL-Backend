@@ -123,6 +123,47 @@ module.exports = (function () {
     });
   };
 
+  const batchInsertMetrics = async function (metrics) {
+    const metrics_copy = (metrics || []).slice(0);
+    const metricsArr = [];
+
+    if (metrics_copy.length === 0) {
+      return;
+    }
+
+    for (const index in metrics_copy) {
+      try {
+        const metricString = recompileMetricString(metrics_copy[index]);
+        const hash = await generateMetricHash(metrics_copy[index].collected + "." + metricString);
+
+        metricsArr.push([
+          metrics_copy[index].collected,
+          metrics_copy[index].topic,
+          metrics_copy[index].category,
+          metrics_copy[index].subcategory,
+          metrics_copy[index].identity,
+          metrics_copy[index].metric,
+          metrics_copy[index].type,
+          metrics_copy[index].value,
+          JSON.stringify(metrics_copy[index].tags),
+          hash,
+        ]);
+
+        console.log(metricString);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const metricsPGArray = metricsArr
+        .map(metric => `(${metric.map(value => `'${value}'`).join(",")})::metricstat_type`)
+        .join(", ");
+
+    await pgPool.query({
+      text: `SELECT batch_add_stat(ARRAY[${metricsPGArray}])`,
+    });
+  }
+
   // Inserts multiple metrics records
   const insertMetrics = async function (metrics) {
     const metrics_copy = (metrics || []).slice(0);
@@ -234,7 +275,7 @@ module.exports = (function () {
           extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timer)
         );
 
-        insertMetrics(metrics);
+        batchInsertMetrics(metrics);
       });
 
       events.on("status", function (callback) {
