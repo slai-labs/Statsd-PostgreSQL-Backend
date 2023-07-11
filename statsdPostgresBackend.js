@@ -127,6 +127,10 @@ module.exports = (function () {
     const metrics_copy = (metrics || []).slice(0);
     const metricsArr = [];
 
+    if (metrics_copy.length === 0) {
+      return;
+    }
+
     for (const index in metrics_copy) {
       try {
         const metricString = recompileMetricString(metrics_copy[index]);
@@ -141,18 +145,23 @@ module.exports = (function () {
           metrics_copy[index].metric,
           metrics_copy[index].type,
           metrics_copy[index].value,
-          metrics_copy[index].tags,
+          JSON.stringify(metrics_copy[index].tags),
           hash,
         ]);
+
+        console.log(metricString);
       } catch (error) {
         console.log(error);
       }
     }
 
+    const metricsPGArray = metricsArr
+        .map(metric => `(${metric.map(value => `'${value}'`).join(",")})::metricstat_type`)
+        .join(", ");
+
     await pgPool.query({
-      text: "SELECT batch_add_stat($1)",
-      values: metricsArr,
-    })
+      text: `SELECT batch_add_stat(ARRAY[${metricsPGArray}])`,
+    });
   }
 
   // Inserts multiple metrics records
