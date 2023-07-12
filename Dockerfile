@@ -1,4 +1,4 @@
-FROM statsd/statsd:latest
+FROM statsd/statsd:v0.10.1
 
 RUN apt update && apt install -y netcat && apt clean \
     && npm install --global pg@^8 crypto-js nodemon
