@@ -131,10 +131,17 @@ module.exports = (function () {
       return;
     }
 
+    const seenHash = new Set();
+
     for (const index in metrics_copy) {
       try {
         const metricString = recompileMetricString(metrics_copy[index]);
         const hash = await generateMetricHash(metrics_copy[index].collected + "." + metricString);
+
+        if (seenHash.has(hash)) {
+          console.log("Skipping duplicate metric: " + metricString);
+          continue;
+        }
 
         metricsArr.push([
           metrics_copy[index].collected,
@@ -149,6 +156,7 @@ module.exports = (function () {
           hash,
         ]);
 
+        seenHash.add(hash);
         console.log(metricString);
       } catch (error) {
         console.log(error);
