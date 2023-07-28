@@ -283,7 +283,7 @@ module.exports = (function () {
           extractor(timestamp, statsdMetrics.timers, STATSD_TYPES.timer)
         );
 
-        batchInsertMetrics(metrics);
+        insertMetrics(metrics);
       });
 
       events.on("status", function (callback) {
