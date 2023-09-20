@@ -185,7 +185,7 @@ module.exports = (function () {
         const start = Date.now();
         await insertMetric(metrics_copy[index], metricString);
         const end = Date.now();
-        console.log(`${metricString} took ${end - start}ms}`);
+        console.log(`${metricString} took ${end - start}ms`);
       } catch (error) {
         console.log(error);
       }
