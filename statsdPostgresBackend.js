@@ -167,9 +167,12 @@ module.exports = (function () {
         .map(metric => `(${metric.map(value => `'${value}'`).join(",")})::metricstat_type`)
         .join(", ");
 
+    const start = Date.now();
     await pgPool.query({
       text: `SELECT batch_add_stat(ARRAY[${metricsPGArray}])`,
     });
+    const end = Date.now();
+    console.log(`Batch insert took ${end - start}ms`);
   }
 
   // Inserts multiple metrics records
@@ -179,8 +182,10 @@ module.exports = (function () {
     for (const index in metrics_copy) {
       try {
         const metricString = recompileMetricString(metrics_copy[index]);
+        const start = Date.now();
         await insertMetric(metrics_copy[index], metricString);
-        console.log(metricString);
+        const end = Date.now();
+        console.log(`${metricString} took ${end - start}ms}`);
       } catch (error) {
         console.log(error);
       }
