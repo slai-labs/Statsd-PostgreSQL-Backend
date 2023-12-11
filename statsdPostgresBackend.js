@@ -7,6 +7,7 @@ module.exports = (function () {
   "use strict";
   const { Pool } = require("pg");
   const CryptoJS = require("crypto-js");
+  const elasticsearch = require("./elasticsearch.js");
   require("log-timestamp");
 
   // Items we don't want to store but are sent with every statsd flush
@@ -289,6 +290,7 @@ module.exports = (function () {
         );
 
         insertMetrics(metrics);
+        elasticsearch.sendMetricsToElasticSearch(metrics);
       });
 
       events.on("status", function (callback) {
