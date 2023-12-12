@@ -1,5 +1,5 @@
 {
-  pghost: `postgres-postgresql.${process.env.OKTETO_NAMESPACE}.svc.cluster.local`,
+  pghost: `postgresql-primary.${process.env.OKTETO_NAMESPACE}.svc.cluster.local`,
   pguser: "postgres",
   pgpass: "password",
   pgdb: "postgres",
