@@ -15,7 +15,7 @@ module.exports = (function () {
         const response = await fetch(
             `${env.ELASTICSEARCH_ENDPOINT}/${env.ELASTICSEARCH_DATASTREAM_NAME}/_bulk`,
             {
-                method: "POST",
+                method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Basic ${Buffer.from(`${env.ELASTICSEARCH_USER}:${env.ELASTICSEARCH_PASS}`).toString("base64")}`
@@ -24,13 +24,24 @@ module.exports = (function () {
             }
         )
 
+
         if (!response.ok) {
             console.error("Error sending metrics to Elasticsearch: ", response.statusText)
         }
     }
 
+    const indexName = function () {
+        const date = new Date()
+        const year = date.getUTCFullYear()
+        const month = date.getUTCMonth()
+        const day = date.getUTCDate()
+        
+        return `${env.ELASTICSEARCH_DATASTREAM_NAME}-${year}.${(month + 1).toString().padStart(2, "0")}.${day.toString().padStart(2, "0")}`
+    }
+
     const compileMetrics = function (metrics) {
         const metrics_copy = (metrics || []).slice(0);
+        // const _index = indexName();
         let insertBuffer = []
 
         if (metrics_copy.length === 0) {
